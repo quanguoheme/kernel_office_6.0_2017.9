@@ -63,7 +63,7 @@ static int codec_write(struct i2c_client *client, unsigned int reg,
 	else
 		return -EIO;
 }
-
+/*
 static unsigned int codec_read(struct i2c_client *client,
 					  unsigned int r)
 {
@@ -72,14 +72,12 @@ static unsigned int codec_read(struct i2c_client *client,
 	u16 data;
 	int ret;
 
-	/* Write register */
 	xfer[0].addr = client->addr;
 	xfer[0].flags = 0;
 	xfer[0].len = 1;
 	xfer[0].buf = &reg;
 	xfer[0].scl_rate = 100 * 1000;
 
-	/* Read data */
 	xfer[1].addr = client->addr;
 	xfer[1].flags = I2C_M_RD;
 	xfer[1].len = 2;
@@ -95,7 +93,7 @@ static unsigned int codec_read(struct i2c_client *client,
 
 	return (data >> 8) | ((data & 0xff) << 8);
 }
-
+*/
 static int es8323_reg_init(struct i2c_client *client, bool main_mic)
 {
 	if (es8323_codec_state != OFF) {

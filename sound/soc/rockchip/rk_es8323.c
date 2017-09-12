@@ -116,8 +116,8 @@ static const struct snd_soc_dapm_route audio_map[]= {
 static int rk29_es8323_init(struct snd_soc_pcm_runtime *rtd)
 {
 	struct snd_soc_dai *codec_dai = rtd->codec_dai;
-	struct snd_soc_codec *codec = rtd->codec;
-	struct snd_soc_dapm_context *dapm = &codec->dapm;
+	//struct snd_soc_codec *codec = rtd->codec;
+	//struct snd_soc_dapm_context *dapm = &codec->dapm;
 	int ret;
 	  
     DBG("Enter::%s----%d\n",__FUNCTION__,__LINE__);
