@@ -566,6 +566,7 @@ struct rk32_edp {
 	bool clk_on;
 	bool edp_en;
 	struct dentry *debugfs_dir;
+	int prop;
 };
 
 

@@ -89,7 +89,7 @@ def run_gcc():
         proc = subprocess.Popen(args, stderr=subprocess.PIPE)
         for line in proc.stderr:
             print line,
-            interpret_warning(line)
+           #nterpret_warning(line)
 
         result = proc.wait()
     except OSError as e:

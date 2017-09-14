@@ -80,6 +80,20 @@
 #define RK_LF_STATUS_NC                  0xfe
 #define RK_LF_MAX_TIMEOUT 			 (1600000UL << 6)	//>0.64s
 
+
+/* x y mirror or rotate mode */
+#define NO_MIRROR	0
+#define X_MIRROR    	1		/* up-down flip*/
+#define Y_MIRROR    	2		/* left-right flip */
+#define X_Y_MIRROR    	3		/* the same as rotate 180 degrees */
+#define ROTATE_90	4		/* clockwise rotate 90 degrees */
+#define ROTATE_180	8		/* rotate 180 degrees
+					 * It is recommended to use X_Y_MIRROR
+					 * rather than ROTATE_180
+					 */
+#define ROTATE_270	12		/* clockwise rotate 270 degrees */
+
+
 /**
 * pixel align value for gpu,align as 64 bytes in an odd number of times
 */
@@ -808,11 +822,12 @@ extern int rk_fb_register(struct rk_lcdc_driver *dev_drv,
 				struct rk_lcdc_win *win, int id);
 extern int rk_fb_unregister(struct rk_lcdc_driver *dev_drv);
 extern struct rk_lcdc_driver *rk_get_lcdc_drv(char *name);
-extern int rk_fb_get_extern_screen(struct rk_screen *screen);
 extern int rk_fb_get_prmry_screen( struct rk_screen *screen);
-extern int rk_fb_set_prmry_screen(struct rk_screen *screen);
+extern int rk_fb_get_screen(struct rk_screen *screen, int prop);
+extern int rk_fb_set_screen(struct rk_screen *screen, int prop);
 extern u32 rk_fb_get_prmry_screen_pixclock(void);
-extern int rk_disp_pwr_ctr_parse_dt(struct rk_lcdc_driver *dev_drv);
+extern int rk_disp_pwr_ctr_parse_dt(struct device_node *np,
+				    struct rk_screen *rk_screen);
 extern int rk_disp_pwr_enable(struct rk_lcdc_driver *dev_drv);
 extern int rk_disp_pwr_disable(struct rk_lcdc_driver *dev_drv);
 extern bool is_prmry_rk_lcdc_registered(void);

@@ -299,6 +299,7 @@ struct dsi {
 	u8 lcdc_id;
 	u8 vid;
 	u8 clk_on;
+	int prop;
 	struct dsi_phy phy;
 	struct dsi_host host;
 	struct mipi_dsi_ops ops;

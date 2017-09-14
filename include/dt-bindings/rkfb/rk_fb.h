@@ -12,9 +12,9 @@
 #define NO_DUAL		0
 #define ONE_DUAL	1
 #define DUAL		2
-/********************************************************************
-**          display output interface supported by rockchip	   **
-********************************************************************/
+#define DUAL_LCD	3
+#define DEFAULT_MODE	0
+
 #define OUT_P888            0	//24bit screen,connect to lcdc D0~D23
 #define OUT_P666            1	//18bit screen,connect to lcdc D0~D17
 #define OUT_P565            2
