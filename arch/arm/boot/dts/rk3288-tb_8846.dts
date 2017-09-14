@@ -455,10 +455,28 @@
 	*/
 };
 
-&uart_bt {
+ 
+&uart_bt {  //uart0
         status = "okay";
         dma-names = "!tx", "!rx";
-        pinctrl-0 = <&uart0_xfer &uart0_cts>;
+        pinctrl-0 = <&uart0_xfer /*&uart0_cts*/>;
+};
+
+&uart_bb {  //uart1
+        status = "okay";
+        dma-names = "!tx", "!rx";
+        pinctrl-0 = <&uart1_xfer /*&uart1_cts*/>;
+};
+
+&uart_gps {  //uart3
+        status = "okay";
+        dma-names = "!tx", "!rx";
+        pinctrl-0 = <&uart3_xfer /*&uart3_cts*/>;
+};
+&uart_exp {  //uart4
+        status = "okay";
+        dma-names = "!tx", "!rx";
+        pinctrl-0 = <&uart4_xfer /*&uart4_cts*/>;
 };
 
 &i2c0 {
