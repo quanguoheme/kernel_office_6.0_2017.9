@@ -48,6 +48,7 @@
 #include <linux/of_gpio.h>
 #include <video/of_display_timing.h>
 #include <video/display_timing.h>
+#include <dt-bindings/rkfb/rk_fb.h>
 #endif
 
 #if defined(CONFIG_ION_ROCKCHIP)
@@ -71,9 +72,8 @@ EXPORT_SYMBOL(video_data_to_mirroring);
 extern phys_addr_t uboot_logo_base;
 extern phys_addr_t uboot_logo_size;
 extern phys_addr_t uboot_logo_offset;
-static struct rk_fb_trsm_ops *trsm_lvds_ops;
-static struct rk_fb_trsm_ops *trsm_edp_ops;
-static struct rk_fb_trsm_ops *trsm_mipi_ops;
+static struct rk_fb_trsm_ops *trsm_prmry_ops;
+static struct rk_fb_trsm_ops *trsm_extend_ops;
 static int uboot_logo_on;
 
 static int rk_fb_debug_lvl;
@@ -107,54 +107,26 @@ int rk_fb_get_display_policy(void)
 
 int rk_fb_trsm_ops_register(struct rk_fb_trsm_ops *ops, int type)
 {
-	switch (type) {
-	case SCREEN_RGB:
-	case SCREEN_LVDS:
-	case SCREEN_DUAL_LVDS:
-	case SCREEN_LVDS_10BIT:
-	case SCREEN_DUAL_LVDS_10BIT:
-		trsm_lvds_ops = ops;
-		break;
-	case SCREEN_EDP:
-		trsm_edp_ops = ops;
-		break;
-	case SCREEN_MIPI:
-	case SCREEN_DUAL_MIPI:
-		trsm_mipi_ops = ops;
-		break;
-	default:
-		pr_warn("%s: unsupported transmitter: %d!\n",
-			__func__, type);
-		break;
-	}
+    if (type == PRMRY)
+        trsm_prmry_ops = ops;
+    else if (type == EXTEND)
+        trsm_extend_ops = ops;
+    else
+        pr_err("%s, type:%d\n", __func__, type);
+     
 	return 0;
 }
 
 struct rk_fb_trsm_ops *rk_fb_trsm_ops_get(int type)
 {
 	struct rk_fb_trsm_ops *ops;
+    if (type == PRMRY)
+        ops = trsm_prmry_ops;
+    else if (type == EXTEND)
+        ops = trsm_extend_ops;
+    else
+        pr_err("%s, type:%d\n", __func__, type);
 
-	switch (type) {
-	case SCREEN_RGB:
-	case SCREEN_LVDS:
-	case SCREEN_DUAL_LVDS:
-	case SCREEN_LVDS_10BIT:
-	case SCREEN_DUAL_LVDS_10BIT:
-		ops = trsm_lvds_ops;
-		break;
-	case SCREEN_EDP:
-		ops = trsm_edp_ops;
-		break;
-	case SCREEN_MIPI:
-	case SCREEN_DUAL_MIPI:
-		ops = trsm_mipi_ops;
-		break;
-	default:
-		ops = NULL;
-		pr_warn("%s: unsupported transmitter: %d!\n",
-			__func__, type);
-		break;
-	}
 	return ops;
 }
 
@@ -309,10 +281,10 @@ static int rk_fb_data_fmt(int data_format, int bits_per_pixel)
 /*
  * rk display power control parse from dts
  */
-int rk_disp_pwr_ctr_parse_dt(struct rk_lcdc_driver *dev_drv)
+int rk_disp_pwr_ctr_parse_dt(struct device_node *np,
+			     struct rk_screen *rk_screen)
 {
-	struct device_node *root = of_get_child_by_name(dev_drv->dev->of_node,
-							"power_ctr");
+	struct device_node *root = of_get_child_by_name(np, "power_ctr");
 	struct device_node *child;
 	struct rk_disp_pwr_ctr_list *pwr_ctr;
 	struct list_head *pos;
@@ -321,10 +293,10 @@ int rk_disp_pwr_ctr_parse_dt(struct rk_lcdc_driver *dev_drv)
 	u32 debug = 0;
 	int ret;
 
-	INIT_LIST_HEAD(&dev_drv->pwrlist_head);
+	INIT_LIST_HEAD(rk_screen->pwrlist_head);
 	if (!root) {
-		dev_err(dev_drv->dev, "can't find power_ctr node for lcdc%d\n",
-			dev_drv->id);
+		dev_err(rk_screen->dev, "can't find power_ctr node for lcdc%d\n",
+			rk_screen->lcdc_id);
 		return -ENODEV;
 	}
 
@@ -337,7 +309,7 @@ int rk_disp_pwr_ctr_parse_dt(struct rk_lcdc_driver *dev_drv)
 				pwr_ctr->pwr_ctr.type = GPIO;
 				pwr_ctr->pwr_ctr.gpio = of_get_gpio_flags(child, 0, &flags);
 				if (!gpio_is_valid(pwr_ctr->pwr_ctr.gpio)) {
-					dev_err(dev_drv->dev, "%s ivalid gpio\n",
+					dev_err(rk_screen->dev, "%s ivalid gpio\n",
 						child->name);
 					return -EINVAL;
 				}
@@ -345,7 +317,7 @@ int rk_disp_pwr_ctr_parse_dt(struct rk_lcdc_driver *dev_drv)
 				ret = gpio_request(pwr_ctr->pwr_ctr.gpio,
 						   child->name);
 				if (ret) {
-					dev_err(dev_drv->dev,
+					dev_err(rk_screen->dev,
 						"request %s gpio fail:%d\n",
 						child->name, ret);
 				}
@@ -354,9 +326,9 @@ int rk_disp_pwr_ctr_parse_dt(struct rk_lcdc_driver *dev_drv)
 				pwr_ctr->pwr_ctr.type = REGULATOR;
 				pwr_ctr->pwr_ctr.rgl_name = NULL;
 				ret = of_property_read_string(child, "rockchip,regulator_name",
-							      &(pwr_ctr->pwr_ctr.rgl_name));
+							     &(pwr_ctr->pwr_ctr.rgl_name));
 				if (ret || IS_ERR_OR_NULL(pwr_ctr->pwr_ctr.rgl_name))
-					dev_err(dev_drv->dev, "get regulator name failed!\n");
+					dev_err(rk_screen->dev, "get regulator name failed!\n");
 				if (!of_property_read_u32(child, "rockchip,regulator_voltage", &val))
 					pwr_ctr->pwr_ctr.volt = val;
 				else
@@ -368,25 +340,25 @@ int rk_disp_pwr_ctr_parse_dt(struct rk_lcdc_driver *dev_drv)
 			pwr_ctr->pwr_ctr.delay = val;
 		else
 			pwr_ctr->pwr_ctr.delay = 0;
-		list_add_tail(&pwr_ctr->list, &dev_drv->pwrlist_head);
+		list_add_tail(&pwr_ctr->list, rk_screen->pwrlist_head);
 	}
 
 	of_property_read_u32(root, "rockchip,debug", &debug);
 
 	if (debug) {
-		list_for_each(pos, &dev_drv->pwrlist_head) {
+		list_for_each(pos, rk_screen->pwrlist_head) {
 			pwr_ctr = list_entry(pos, struct rk_disp_pwr_ctr_list,
 					     list);
-			pr_info("pwr_ctr_name:%s\n"
-				"pwr_type:%s\n"
-				"gpio:%d\n"
-				"atv_val:%d\n"
-				"delay:%d\n\n",
-				pwr_ctr->pwr_ctr.name,
-				(pwr_ctr->pwr_ctr.type == GPIO) ? "gpio" : "regulator",
-				pwr_ctr->pwr_ctr.gpio,
-				pwr_ctr->pwr_ctr.atv_val,
-				pwr_ctr->pwr_ctr.delay);
+			printk(KERN_INFO "pwr_ctr_name:%s\n"
+			       "pwr_type:%s\n"
+			       "gpio:%d\n"
+			       "atv_val:%d\n"
+			       "delay:%d\n\n",
+			       pwr_ctr->pwr_ctr.name,
+			       (pwr_ctr->pwr_ctr.type == GPIO) ? "gpio" : "regulator",
+			       pwr_ctr->pwr_ctr.gpio,
+			       pwr_ctr->pwr_ctr.atv_val,
+			       pwr_ctr->pwr_ctr.delay);
 		}
 	}
 
@@ -401,9 +373,14 @@ int rk_disp_pwr_enable(struct rk_lcdc_driver *dev_drv)
 	struct regulator *regulator_lcd = NULL;
 	int count = 10;
 
-	if (list_empty(&dev_drv->pwrlist_head))
+	if (!dev_drv->cur_screen->pwrlist_head) {
+		pr_info("error:  %s, lcdc%d screen pwrlist null\n",
+			__func__, dev_drv->id);
 		return 0;
-	list_for_each(pos, &dev_drv->pwrlist_head) {
+	}
+	if (list_empty(dev_drv->cur_screen->pwrlist_head))
+		return 0;
+	list_for_each(pos, dev_drv->cur_screen->pwrlist_head) {
 		pwr_ctr_list = list_entry(pos, struct rk_disp_pwr_ctr_list,
 					  list);
 		pwr_ctr = &pwr_ctr_list->pwr_ctr;
@@ -412,8 +389,7 @@ int rk_disp_pwr_enable(struct rk_lcdc_driver *dev_drv)
 			mdelay(pwr_ctr->delay);
 		} else if (pwr_ctr->type == REGULATOR) {
 			if (pwr_ctr->rgl_name)
-				regulator_lcd =
-					regulator_get(NULL, pwr_ctr->rgl_name);
+				regulator_lcd = regulator_get(NULL, pwr_ctr->rgl_name);
 			if (regulator_lcd == NULL) {
 				dev_err(dev_drv->dev,
 					"%s: regulator get failed,regulator name:%s\n",
@@ -446,9 +422,14 @@ int rk_disp_pwr_disable(struct rk_lcdc_driver *dev_drv)
 	struct regulator *regulator_lcd = NULL;
 	int count = 10;
 
-	if (list_empty(&dev_drv->pwrlist_head))
+	if (!dev_drv->cur_screen->pwrlist_head) {
+		pr_info("error:  %s, lcdc%d screen pwrlist null\n",
+			__func__, dev_drv->id);
 		return 0;
-	list_for_each(pos, &dev_drv->pwrlist_head) {
+	}
+	if (list_empty(dev_drv->cur_screen->pwrlist_head))
+		return 0;
+	list_for_each(pos, dev_drv->cur_screen->pwrlist_head) {
 		pwr_ctr_list = list_entry(pos, struct rk_disp_pwr_ctr_list,
 					  list);
 		pwr_ctr = &pwr_ctr_list->pwr_ctr;
@@ -533,7 +514,7 @@ int rk_fb_prase_timing_dt(struct device_node *np, struct rk_screen *screen)
 		pr_err("parse display timing err\n");
 		return -EINVAL;
 	}
-	dt = display_timings_get(disp_timing, disp_timing->native_mode);
+	dt = display_timings_get(disp_timing, screen->native_mode);
 	rk_fb_video_mode_from_timing(dt, screen);
 
 	return 0;
@@ -791,7 +772,7 @@ u64 rk_fb_get_prmry_screen_framedone_t(void)
  */
 int rk_fb_set_prmry_screen_status(int status)
 {
-	struct rk_lcdc_driver *dev_drv = rk_get_prmry_lcdc_drv();
+	/*struct rk_lcdc_driver *dev_drv = rk_get_prmry_lcdc_drv();
 	struct rk_screen *screen;
 
 	if (unlikely(!dev_drv))
@@ -816,7 +797,7 @@ int rk_fb_set_prmry_screen_status(int status)
 	default:
 		break;
 	}
-
+*/
 	return 0;
 }
 
@@ -1657,33 +1638,34 @@ static void rk_fb_update_win(struct rk_lcdc_driver *dev_drv,
 					reg_win_data->reg_area_data[i].ion_handle;
 				win->area[i].smem_start =
 					reg_win_data->reg_area_data[i].smem_start;
-				if (inf->disp_mode == DUAL ||
-				    inf->disp_mode == NO_DUAL) {
-					win->area[i].xpos =
-						reg_win_data->reg_area_data[i].xpos;
-					win->area[i].ypos =
-						reg_win_data->reg_area_data[i].ypos;
-					win->area[i].xsize =
-						reg_win_data->reg_area_data[i].xsize;
-					win->area[i].ysize =
-						reg_win_data->reg_area_data[i].ysize;
-				} else {
-					win->area[i].xpos =
-						reg_win_data->reg_area_data[i].xpos *
-						cur_screen->mode.xres /
-						primary_screen.mode.xres;
-					win->area[i].ypos =
-						reg_win_data->reg_area_data[i].ypos *
-						cur_screen->mode.yres /
-						primary_screen.mode.yres;
-					win->area[i].xsize =
-						reg_win_data->reg_area_data[i].xsize *
-						cur_screen->mode.xres /
-						primary_screen.mode.xres;
-					win->area[i].ysize =
-						reg_win_data->reg_area_data[i].ysize *
-						cur_screen->mode.yres /
-						primary_screen.mode.yres;
+                                if (inf->disp_mode == DUAL ||
+                                    inf->disp_mode == DUAL_LCD ||
+                                    inf->disp_mode == NO_DUAL) {
+				        win->area[i].xpos =
+				                reg_win_data->reg_area_data[i].xpos;
+				        win->area[i].ypos =
+				                reg_win_data->reg_area_data[i].ypos;
+				        win->area[i].xsize =
+				                reg_win_data->reg_area_data[i].xsize;
+				        win->area[i].ysize =
+				                reg_win_data->reg_area_data[i].ysize;
+                                } else {
+                                        win->area[i].xpos =
+                                                reg_win_data->reg_area_data[i].xpos *
+                                                cur_screen->mode.xres /
+                                                primary_screen.mode.xres;
+	                                win->area[i].ypos =
+                                                reg_win_data->reg_area_data[i].ypos *
+                                                cur_screen->mode.yres /
+                                                primary_screen.mode.yres;
+	                                win->area[i].xsize =
+                                                reg_win_data->reg_area_data[i].xsize *
+                                                cur_screen->mode.xres /
+                                                primary_screen.mode.xres;
+	                                win->area[i].ysize =
+                                                reg_win_data->reg_area_data[i].ysize *
+                                                cur_screen->mode.yres /
+                                                primary_screen.mode.yres;
 
 					/* recalc display size if set hdmi scaler when at ONE_DUAL mode */
 					if (inf->disp_mode == ONE_DUAL && hdmi_switch_state) {
@@ -1873,20 +1855,6 @@ static void rk_fb_update_reg(struct rk_lcdc_driver *dev_drv,
 	int count = 100;
 	long timeout;
 	int pagefault = 0;
-
-	if (dev_drv->suspend_flag == 1) {
-#ifdef H_USE_FENCE
-		sw_sync_timeline_inc(dev_drv->timeline, 1);
-#endif
-		for (i = 0; i < regs->win_num; i++) {
-			win_data = &regs->reg_win_data[i];
-			rk_fb_free_dma_buf(dev_drv, win_data);
-		}
-		if (dev_drv->property.feature & SUPPORT_WRITE_BACK)
-			rk_fb_free_wb_buf(dev_drv, &regs->reg_wb_data);
-		kfree(regs);
-		return;
-	}
 	/* acq_fence wait */
 	for (i = 0; i < regs->win_num; i++) {
 		win_data = &regs->reg_win_data[i];
@@ -3838,7 +3806,7 @@ static int rk_fb_alloc_buffer_by_ion(struct fb_info *fbi,
 		goto err_share_dma_buf;
 	}
 	win->area[0].ion_hdl = handle;
-	if (dev_drv->prop == PRMRY)
+       // if (dev_drv->prop == PRMRY)
 		fbi->screen_base = ion_map_kernel(rk_fb->ion_client, handle);
 	if (dev_drv->iommu_enabled && dev_drv->mmu_dev)
 		ret = ion_map_iommu(dev_drv->dev, rk_fb->ion_client, handle,
@@ -3884,7 +3852,8 @@ static int rk_fb_alloc_buffer(struct fb_info *fbi)
 		win = dev_drv->win[win_id];
 
 	if (!strcmp(fbi->fix.id, "fb0")) {
-		fb_mem_size = get_fb_size(dev_drv->reserved_fb);
+		fb_mem_size = get_fb_size(dev_drv->reserved_fb,
+					  dev_drv->cur_screen);
 #if defined(CONFIG_ION_ROCKCHIP)
 		if (rk_fb_alloc_buffer_by_ion(fbi, win, fb_mem_size) < 0)
 			return -ENOMEM;
@@ -3905,8 +3874,8 @@ static int rk_fb_alloc_buffer(struct fb_info *fbi)
 		if (dev_drv->prop == EXTEND && dev_drv->iommu_enabled) {
 			struct rk_lcdc_driver *dev_drv_prmry;
 			int win_id_prmry;
-
-			fb_mem_size = get_fb_size(dev_drv->reserved_fb);
+			fb_mem_size = get_fb_size(dev_drv->reserved_fb,
+                          dev_drv->cur_screen);
 #if defined(CONFIG_ION_ROCKCHIP)
 			dev_drv_prmry = rk_get_prmry_lcdc_drv();
 			if (dev_drv_prmry == NULL)
@@ -3955,9 +3924,17 @@ static int rk_fb_alloc_buffer(struct fb_info *fbi)
 			fbi->screen_base = fb_mem_virt;
 #endif
 		} else {
-			fbi->fix.smem_start = rk_fb->fb[0]->fix.smem_start;
-			fbi->fix.smem_len = rk_fb->fb[0]->fix.smem_len;
-			fbi->screen_base = rk_fb->fb[0]->screen_base;
+			printk("extend fbi\n");
+			fb_mem_size = get_fb_size(dev_drv->reserved_fb,
+					  dev_drv->cur_screen);
+		if (rk_fb_alloc_buffer_by_ion(fbi, win, fb_mem_size) < 0)
+			return -ENOMEM;
+		memset(fbi->screen_base, 0, fbi->fix.smem_len);
+		/*
+			fbi->fix.smem_start = rk_fb->fb[4]->fix.smem_start;
+			fbi->fix.smem_len = rk_fb->fb[4]->fix.smem_len;
+			fbi->screen_base = rk_fb->fb[4]->screen_base;
+			*/
 		}
 	}
 
@@ -4071,14 +4048,9 @@ static int init_lcdc_device_driver(struct rk_fb *rk_fb,
 		dev_drv->area_support[i] = 1;
 	if (dev_drv->ops->area_support_num)
 		dev_drv->ops->area_support_num(dev_drv, dev_drv->area_support);
-	rk_disp_pwr_ctr_parse_dt(dev_drv);
-	if (dev_drv->prop == PRMRY) {
-		rk_fb_set_prmry_screen(screen);
-		rk_fb_get_prmry_screen(screen);
-	}
-	dev_drv->trsm_ops = rk_fb_trsm_ops_get(screen->type);
-	if (dev_drv->prop != PRMRY)
-		rk_fb_get_extern_screen(screen);
+	rk_fb_set_screen(screen, dev_drv->prop);
+	rk_fb_get_screen(screen, dev_drv->prop);
+	dev_drv->trsm_ops = rk_fb_trsm_ops_get(dev_drv->prop);
 	dev_drv->output_color = screen->color_mode;
 
 	return 0;
@@ -4416,9 +4388,10 @@ int rk_fb_register(struct rk_lcdc_driver *dev_drv,
 		main_fbi->fbops->fb_pan_display(&main_fbi->var, main_fbi);
 #endif
 	} else {
-		struct fb_info *extend_fbi = rk_fb->fb[dev_drv->fb_index_base];
-
-		extend_fbi->var.pixclock = rk_fb->fb[0]->var.pixclock;
+                struct fb_info *extend_fbi = rk_fb->fb[4];
+                extend_fbi->var.pixclock = rk_fb->fb[4]->var.pixclock;
+                extend_fbi->var.xres_virtual = rk_fb->fb[4]->var.xres_virtual;
+                extend_fbi->var.yres_virtual = rk_fb->fb[4]->var.yres_virtual;
 		extend_fbi->fbops->fb_open(extend_fbi, 1);
 		if (dev_drv->iommu_enabled) {
 			if (dev_drv->mmu_dev)
@@ -4426,6 +4399,26 @@ int rk_fb_register(struct rk_lcdc_driver *dev_drv,
 								 rk_fb_sysmmu_fault_handler);
 		}
 		rk_fb_alloc_buffer(extend_fbi);
+		
+		#if defined(CONFIG_LOGO)
+		extend_fbi->fbops->fb_set_par(extend_fbi);
+#if  defined(CONFIG_LOGO_LINUX_BMP)
+		if (fb_prewine_bmp_logo(extend_fbi, FB_ROTATE_UR)) {
+			fb_set_cmap(&extend_fbi->cmap, extend_fbi);
+			fb_show_bmp_logo(extend_fbi, FB_ROTATE_UR);
+		}
+#else
+		if (fb_prepare_logo(extend_fbi, FB_ROTATE_UR)) {
+			fb_set_cmap(&extend_fbi->cmap, extend_fbi);
+			fb_show_logo(extend_fbi, FB_ROTATE_UR);
+		}
+#endif
+		#endif
+        if (rk_fb->disp_mode == DUAL_LCD) {
+            //extend_fbi->fbops->fb_set_par(extend_fbi);
+            extend_fbi->fbops->fb_pan_display(&extend_fbi->var,
+                                        extend_fbi);
+        }
 	}
 #endif
 	return 0;

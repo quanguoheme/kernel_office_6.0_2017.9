@@ -3,11 +3,11 @@
  *
  */
 
-/ {
 
-		disp_timings: display-timings {
-                        native-mode = <&timing0>;
-                        timing0: timing0 {
+
+display-timings {
+    native-mode = <&b101ew05>;
+                        b101ew05: timing0 {
 				screen-type = <SCREEN_EDP>;
 				out-face    = <OUT_P666>;
 				clock-frequency = <205000000>;
@@ -122,6 +122,6 @@
 					0x00003dec 0x00003da5 0x00003d5e 0x00003d18 0x00003cd2 0x00003c8c 0x00003c48 0x00003c03
 					0x00003bbf 0x00003b7b 0x00003b38 0x00003af5 0x00003ab3 0x00003a71 0x00003a30 0x000039ef
 					0x000039ae 0x0000396e 0x0000392e 0x000038ee 0x000038af 0x00003871 0x00003832 0x000037f5>;
-					};
+					
 			};
 };

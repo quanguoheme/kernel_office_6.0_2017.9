@@ -1574,7 +1574,8 @@ static int rk32_dsi_enable(void)
 	MIPI_DBG("rk32_dsi_enable-------\n");
 	if (!dsi0->clk_on) {
 		dsi0->clk_on = 1;
-		rk_fb_get_prmry_screen(dsi0->screen.screen);
+		//rk_fb_get_prmry_screen(dsi0->screen.screen);
+		rk_fb_get_screen(dsi0->screen.screen, dsi0->prop);
 		dsi0->screen.lcdc_id = dsi0->screen.screen->lcdc_id;
 		rk32_init_phy_mode(dsi0->screen.lcdc_id);
 
@@ -1713,6 +1714,7 @@ static const struct of_device_id of_rk_mipi_dsi_match[] = {
 static int rk32_mipi_dsi_probe(struct platform_device *pdev)
 {
 	int ret = 0;
+	int prop;
 	static int id;
 	struct dsi *dsi;
 	struct mipi_dsi_ops *ops;
@@ -1720,6 +1722,7 @@ static int rk32_mipi_dsi_probe(struct platform_device *pdev)
 	struct mipi_dsi_screen *dsi_screen;
 	struct resource *res_host, *res_phy;
 	const struct dsi_type *data;
+	struct device_node *np = pdev->dev.of_node;
 	const struct of_device_id *of_id =
 			of_match_device(of_rk_mipi_dsi_match, &pdev->dev);
 	if (!of_id) {
@@ -1727,7 +1730,8 @@ static int rk32_mipi_dsi_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 	data = of_id->data;
-
+   of_property_read_u32(np, "prop", &prop);
+	 pr_info("Use MIPI as %s screen\n", (prop == PRMRY) ? "prmry" : "extend");
 	dsi = devm_kzalloc(&pdev->dev, sizeof(struct dsi), GFP_KERNEL);
 	if (!dsi) {
 		dev_err(&pdev->dev, "request struct dsi fail!\n");
@@ -1846,7 +1850,7 @@ static int rk32_mipi_dsi_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "request struct rk_screen fail!\n");
 		return -1;
 	}
-	rk_fb_get_prmry_screen(screen);
+	rk_fb_get_screen(screen,prop);
 
 	dsi->pdev = pdev;
 	ops = &dsi->ops;
@@ -1890,6 +1894,7 @@ static int rk32_mipi_dsi_probe(struct platform_device *pdev)
 	/* dsi_screen->lcdc_id = 1; */
 
 	dsi->dsi_id = id++;
+	dsi->prop = prop;
 
 	sprintf(ops->name, "rk_mipi_dsi.%d", dsi->dsi_id);
 	platform_set_drvdata(pdev, dsi);
@@ -1901,7 +1906,9 @@ static int rk32_mipi_dsi_probe(struct platform_device *pdev)
 		if(!support_uboot_display())
 			rk32_init_phy_mode(dsi_screen->lcdc_id);
 		*/
-		rk_fb_trsm_ops_register(&trsm_dsi_ops, SCREEN_MIPI);
+		//rk_fb_trsm_ops_register(&trsm_dsi_ops, EXTEND);
+		rk_fb_trsm_ops_register(&trsm_dsi_ops, prop);
+		
 #ifdef MIPI_DSI_REGISTER_IO
 		debugfs_create_file("mipidsi0", S_IFREG | S_IRUGO, dsi->debugfs_dir, dsi,
 							&reg_proc_fops);

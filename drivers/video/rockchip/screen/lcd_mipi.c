@@ -251,9 +251,9 @@ int rk_mipi_screen_standby(u8 enable)
 	u8 dcs[16] = {0}, rk_dsi_num;
 	rk_dsi_num = gmipi_screen->mipi_dsi_num;
 
-	if (dsi_is_active(0) != 1)
+	/*if (dsi_is_active(0) != 1)
 		return -1;
-
+*/
 	if (rk_dsi_num == 2)
 		if ((dsi_is_active(0) != 1) || (dsi_is_active(1) != 1))
 			return -1;
