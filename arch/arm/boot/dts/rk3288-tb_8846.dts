@@ -58,11 +58,11 @@
         status = "okay";
     };
 
-    hallsensor {
+   /* hallsensor {
                compatible = "hall_och165t";
                type = <SENSOR_TYPE_HALL>;
                irq-gpio = <&gpio0 GPIO_A6 IRQ_TYPE_EDGE_BOTH>;
-     };
+     };*/
 
 	backlight {
 		compatible = "pwm-backlight";
