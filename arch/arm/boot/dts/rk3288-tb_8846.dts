@@ -1,7 +1,7 @@
 /dts-v1/;
 
 #include "rk3288.dtsi"
-#include "lcd-b101ew05.dtsi"
+//#include "lcd-b101ew05.dtsi"
 //#include "lcd-F402.dtsi"
 #include "vtl_ts_sdk8846.dtsi"
 #include "rk3288-cif-sensor.dtsi"
@@ -673,7 +673,7 @@
 
 &rk_screen {
 	screen0 {
-		screen_prop = <EXTEND>;//PRMRY
+		screen_prop = <PRMRY>;//PRMRY EXTEND
 		native-mode = <DEFAULT_MODE>;
 		power_ctr {
 			lcd_en:lcd_en {
@@ -694,72 +694,18 @@
 				rockchip,delay = <5>;
 			};			
 		};
-	//	#include "lcd-F402.dtsi"
+		#include "lcd-b101ew05.dtsi"
 		
-display-timings {
-    native-mode = <&b101ew05>;
-                        b101ew05: timing0 {
-				screen-type = <SCREEN_EDP>;
-				out-face    = <OUT_P666>;
-				clock-frequency = <120000000>;
-				hactive = <1536>;
-				vactive = <2048>;
-				hback-porch = <48>;
-				hfront-porch = <12>;
-				vback-porch = <8>;
-				vfront-porch = <8>;
-				hsync-len = <16>;
-				vsync-len = <4>;
-				hsync-active = <0>;
-				vsync-active = <0>;
-				de-active = <0>;
-				pixelclk-active = <1>;
-				swap-rb = <0>;
-				swap-rg = <0>;
-				swap-gb = <0>;
-				};
-				};
+ 
 	};
-	screen1 {
-		screen_prop = <PRMRY>;//EXTEND
-		native-mode = <DEFAULT_MODE>;
-		power_ctr {
-			
-		};
 
-	display-timings {
-            native-mode = <&jd9366>;
-            compatible = "rockchip,display-timings";
-            jd9366: timing0 {
-					screen-type = <SCREEN_MIPI>;
-				lvds-format = <LVDS_8BIT_2>;
-				out-face    = <OUT_P888>;
-				clock-frequency = <120000000>;
-				hactive = <1200>;
-				vactive = <1920>;
-				hback-porch = <80>;
-				hfront-porch = <81>;
-				vback-porch = <21>;
-				vfront-porch = <21>;
-				hsync-len = <10>;
-				vsync-len = <3>;
-				hsync-active = <0>;
-				vsync-active = <0>;
-				de-active = <0>;
-				pixelclk-active = <0>;
-				swap-rb = <0>;
-				swap-rg = <0>;
-				swap-gb = <0>;
-                     	};
-               };
-	};
 };
 &edp {
-	status = "okay";
+	status = "disabled";
   prop = <EXTEND>;
 };
-&dsihost0{
-	status = "okay";
+&dsihost0{//mipi
+	status = "disabled";
 	prop = <PRMRY>;
 };
 
@@ -805,8 +751,9 @@ display-timings {
 };
 
 &hdmi {
-	status = "disabled";
+	status = "okay";
 	rockchip,hdmi_video_source = <DISPLAY_SOURCE_LCDC1>;
+	prop = <EXTEND>;
 };
 
 &edp {
@@ -814,11 +761,12 @@ display-timings {
 };
 
 &lvds {
+	prop = <PRMRY>;
 	status = "okay";
 };
 
 
-&ps2c {
+&ps2c {//? 不知道干嘛的
 	status = "okay";
 };
 

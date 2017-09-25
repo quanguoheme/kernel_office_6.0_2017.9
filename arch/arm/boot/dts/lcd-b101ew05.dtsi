@@ -3,7 +3,7 @@
  *
  */
 
-/ {
+ 
 
 		disp_timings: display-timings {
                         native-mode = <&timing0>;
@@ -64,4 +64,4 @@
 					 0x000000f1 0x000000f3 0x000000f5 0x000000f7 0x000000f9 0x000000fb 0x000000fd 0x000000ff>;
 			};
 		};
-};
+ 
