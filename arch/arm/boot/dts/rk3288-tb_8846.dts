@@ -226,7 +226,7 @@
 
 &pinctrl {
 	//used for init some gpio
-	init-gpios = <&gpio0 GPIO_A6 GPIO_ACTIVE_HIGH  /*host_power_en1*/
+	init-gpios = <//&gpio0 GPIO_A6 GPIO_ACTIVE_HIGH  /*host_power_en1*/
 			      &gpio7 GPIO_B3 GPIO_ACTIVE_LOW    /*sdmmc_pwr*/
                   &gpio2 GPIO_B7 GPIO_ACTIVE_HIGH   /*CIF_PDN1*/
                   &gpio0 GPIO_A7 GPIO_ACTIVE_LOW    /*hdmi power && led power*/
@@ -697,15 +697,16 @@
 		
 		lcd_cs:lcd_cs {
 			rockchip,power_type = <GPIO>;
-			gpios = <&gpio7 GPIO_B5 GPIO_ACTIVE_HIGH>;
+			//gpios = <&gpio7 GPIO_B5 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpio0 GPIO_A6 GPIO_ACTIVE_HIGH >;// 仅仅用来测试
 			rockchip,delay = <10>;
 		};
 
-		lcd_rst:lcd_rst { //hdmi  电源 
+		/*lcd_rst:lcd_rst { //hdmi  电源 
 			rockchip,power_type = <GPIO>;
-			gpios = <&gpio0 GPIO_A7 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpio0 GPIO_A6 GPIO_ACTIVE_HIGH >;
 			rockchip,delay = <5>;
-		};
+		};*/
 
 	};
 };
