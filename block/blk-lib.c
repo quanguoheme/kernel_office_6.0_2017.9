@@ -77,7 +77,10 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
 		if (!blk_queue_secdiscard(q))
 			return -EOPNOTSUPP;
 		type |= REQ_SECURE;
-	}
+	} else if (nr_sects < 32) {
+               /* disable small size normal discard */
+               return 0;
+    }
 
 	atomic_set(&bb.done, 1);
 	bb.flags = 1 << BIO_UPTODATE;

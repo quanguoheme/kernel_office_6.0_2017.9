@@ -567,7 +567,10 @@ static int rockchip_i2s_probe(struct platform_device *pdev)
 	void __iomem *regs;
 	int ret;
 	int val;
-
+    int cpu_id = 1;
+    struct cpumask cpumask;
+    int irq = 32;
+	
 	ret = of_property_read_u32(node, "i2s-id", &pdev->id);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "Property 'i2s-id' missing or invalid\n");
@@ -724,6 +727,9 @@ static int rockchip_i2s_probe(struct platform_device *pdev)
 
 	rockchip_snd_txctrl(i2s, 0);
 	rockchip_snd_rxctrl(i2s, 0);
+    cpumask_clear(&cpumask);
+    cpumask_set_cpu(cpu_id, &cpumask);
+    irq_set_affinity(irq, &cpumask);
 
 	return 0;
 

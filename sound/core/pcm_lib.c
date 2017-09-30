@@ -31,7 +31,8 @@
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <sound/timer.h>
-
+#include <linux/sched.h>
+#include <linux/sched/rt.h>
 /*
  * fill ring buffer with silence
  * runtime->silence_start: starting pointer to silence area
@@ -1864,6 +1865,12 @@ void snd_pcm_period_elapsed(struct snd_pcm_substream *substream)
 
 EXPORT_SYMBOL(snd_pcm_period_elapsed);
 
+static inline int rt_policy(int policy)
+{
+       if (policy == SCHED_FIFO || policy == SCHED_RR)
+               return 1;
+       return 0;
+}
 /*
  * Wait until avail_min data becomes available
  * Returns a negative error code if any error occurs during operation.
@@ -1880,6 +1887,11 @@ static int wait_for_avail(struct snd_pcm_substream *substream,
 	snd_pcm_uframes_t avail = 0;
 	long wait_time, tout;
 
+    if (!rt_policy(current->policy)) {
+     struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
+     sched_setscheduler_nocheck(current, SCHED_FIFO, &param);
+    }	
+	
 	init_waitqueue_entry(&wait, current);
 	set_current_state(TASK_INTERRUPTIBLE);
 	add_wait_queue(&runtime->tsleep, &wait);
