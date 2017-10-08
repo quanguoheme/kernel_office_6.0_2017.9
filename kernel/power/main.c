@@ -341,11 +341,13 @@ static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
 {
 	suspend_state_t state;
 	int error;
-
+	printk(" quck state_store(2) ");
+	
 	error = pm_autosleep_lock();
 	if (error)
 		return error;
-
+	state=state;
+	/*
 	if (pm_autosleep_state() > PM_SUSPEND_ON) {
 		error = -EBUSY;
 		goto out;
@@ -359,7 +361,7 @@ static ssize_t state_store(struct kobject *kobj, struct kobj_attribute *attr,
 	else
 		error = -EINVAL;
 
- out:
+ out:*/
 	pm_autosleep_unlock();
 	return error ? error : n;
 }
@@ -462,7 +464,7 @@ static ssize_t autosleep_store(struct kobject *kobj,
 {
 	suspend_state_t state = decode_state(buf, n);
 	int error;
-
+	printk(" quck autosleep_store(1) ");
 	if (state == PM_SUSPEND_ON
 	    && strcmp(buf, "off") && strcmp(buf, "off\n"))
 		return -EINVAL;
