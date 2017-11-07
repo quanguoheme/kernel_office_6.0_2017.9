@@ -108,14 +108,14 @@
 		};
 	};
 
-	codec_hdmi_i2s: codec-hdmi-i2s {
+	/*codec_hdmi_i2s: codec-hdmi-i2s {
 		compatible = "hdmi-i2s";
 	};
 
 	codec_hdmi_spdif: codec-hdmi-spdif {
 		compatible = "hdmi-spdif";
-	};
-
+	}; 
+ 
 	rockchip-hdmi-i2s {
 		status = "disabled";
 		compatible = "rockchip-hdmi-i2s";
@@ -131,7 +131,7 @@
 				//frame-master;
 			};
 		};
-	};
+	};*/
 	
 	rockchip-es8323 {
 		compatible = "rockchip-es8323";
@@ -145,59 +145,7 @@
 			};
 		};
 	};	
-	
-	rockchip-hdmi-spdif {
-		compatible = "rockchip-hdmi-spdif";
-		dais {
-			dai0 {
-				audio-codec = <&codec_hdmi_spdif>;
-				audio-controller = <&spdif>;
-			};
-		};
-	};
-
-	rockchip-rt5631 {
-		compatible = "rockchip-rt5631";
-		dais {
-			dai0 {
-				audio-codec = <&rt5631>;
-				audio-controller = <&i2s>;
-				format = "i2s";
-				//continuous-clock;
-				//bitclock-inversion;
-				//frame-inversion;
-				//bitclock-master;
-				//frame-master;
-			};
-		};
-	};
-
-	rockchip-rt3224 {
-		compatible = "rockchip-rt3261";
-		dais {
-			dai0 {
-				audio-codec = <&rt3261>;
-				audio-controller = <&i2s>;
-				format = "i2s";
-				//continuous-clock;
-				//bitclock-inversion;
-				//frame-inversion;
-				//bitclock-master;
-				//frame-master;
-			};
-			dai1 {
-				audio-codec = <&rt3261>;
-				audio-controller = <&i2s>;
-				format = "dsp_a";
-				//continuous-clock;
-				bitclock-inversion;
-				//frame-inversion;
-				//bitclock-master;
-				//frame-master;
-			};
-		};
-	};
-
+ 
 	usb_control {
 		compatible = "rockchip,rk3288-usb-control";
 
