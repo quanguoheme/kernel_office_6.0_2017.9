@@ -12,7 +12,7 @@
 				lvds-format = <0x0>;
 				out-face = <0x0>;
 				color-mode = <0x0>;
-				clock-frequency = <0x4f27ac0>;
+				clock-frequency = <43000000>;
 				hactive = <0x400>;
 				vactive = <0x300>;
 				hback-porch = <0x10>;
